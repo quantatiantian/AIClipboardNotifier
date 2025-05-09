@@ -37,7 +37,7 @@ A smart Windows clipboard utility that provides intelligent notifications and pr
 
 ## Installation
 
-1. Download the latest release from [Releases](https://github.com/yourusername/ai-clipboard-notifier/releases)
+1. Download the latest release from [Releases](https://github.com/quantatiantian/AIClipboardNotifier/releases)
 2. Change your Ollama configuration in config.txt
 3. Run AIClipboardNotifier.exe
 
