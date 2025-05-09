@@ -1,0 +1,53 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\workspace\\release\\AIClipboardNotifier\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{BA6E2014-1F3B-4A8F-8276-07653302B2DD}|ClipboardNotifier.csproj|D:\\workspace\\release\\AIClipboardNotifier\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BA6E2014-1F3B-4A8F-8276-07653302B2DD}|ClipboardNotifier.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BA6E2014-1F3B-4A8F-8276-07653302B2DD}|AIClipboardNotifier.csproj|d:\\workspace\\release\\aiclipboardnotifier\\properties\\resources.resx||{81828910-B8B3-4D2B-99A3-067027C180C1}",
+      "RelativeMoniker": "D:0:0:{BA6E2014-1F3B-4A8F-8276-07653302B2DD}|AIClipboardNotifier.csproj|solutionrelative:properties\\resources.resx||{81828910-B8B3-4D2B-99A3-067027C180C1}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Resources.resx",
+              "DocumentMoniker": "D:\\workspace\\release\\AIClipboardNotifier\\Properties\\Resources.resx",
+              "RelativeDocumentMoniker": "Properties\\Resources.resx",
+              "ToolTip": "D:\\workspace\\release\\AIClipboardNotifier\\Properties\\Resources.resx",
+              "RelativeToolTip": "Properties\\Resources.resx",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001005|",
+              "WhenOpened": "2025-05-06T13:43:42.098Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "D:\\workspace\\release\\AIClipboardNotifier\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "D:\\workspace\\release\\AIClipboardNotifier\\Form1.cs",
+              "RelativeToolTip": "Form1.cs",
+              "ViewState": "AgIAAJAAAAAAAAAAAAAjwKYAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-09T07:22:53.911Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
