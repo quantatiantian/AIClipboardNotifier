@@ -1,0 +1,18 @@
+# 忽略编译生成的文件夹
+bin/
+obj/
+
+# Visual Studio 生成文件
+*.user
+*.suo
+*.svhost
+*.ncb
+*.sln.docstates
+
+# NuGet Packages 目录
+packages/
+
+# 忽略其他临时文件
+*.log
+*.cache
+/.vs/AIClipboardNotifier/FileContentIndex
