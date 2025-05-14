@@ -1,24 +1,30 @@
 If you want to use the "AI translate" or "AI anything" feature, 
-you need to configure either ollama or open-webui according to your AI environment settings and set its "enable" to true.
-If you are not using a local AI environment, you can try setting the endpoint, apikey, and model in open-webui to your AI service provider, 
-but I haven't tested it.
+you need to configure ollama or open-webui or openai-like according to your AI environment settings and set its "enable" to true.
 
 #ollama
 endpoint:http://localhost:11434/api/generate
 model:qwen2.5:3b
-enable:true
+enable:false
 prompt:Calculate the equation below and reply with only the calculated result. Do not include the calculation process or any other context outside of the result
 ※prompt is used for AI Anything feature
 
 #translate
 taget language:english
 ※The AI translate function does not need to set a prompt because the prompt is already built into the program. 
-It also does not need to set the input language because the AI can automatically determine it.
+※It also does not need to set the input language because the AI can automatically determine it.
 
 #open-webui
 endpoint:http://localhost:3000/ollama/api/chat
 apikey:sk-92a4de2d1f254fa787c3a7da7fd02e3c
 model:qwen2.5:3b
 enable:false
+prompt:Calculate the equation below and reply with only the calculated result. Do not include the calculation process or any other context outside of the result
+※prompt is used for AI Anything feature
+
+#openai-like
+endpoint:http://localhost:3000/api/chat/completions
+apikey:sk-92a4de2d1f254fa787c3a7da7fd02e3c
+model:qwen2.5:3b
+enable:true
 prompt:Calculate the equation below and reply with only the calculated result. Do not include the calculation process or any other context outside of the result
 ※prompt is used for AI Anything feature
