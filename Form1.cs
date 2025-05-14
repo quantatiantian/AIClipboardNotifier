@@ -503,7 +503,6 @@ namespace AIClipboardNotifier
             }
         }
 
-        private static readonly HttpClient client = new HttpClient();
         private async Task<string> RequestOpenWebuiAsync(string text)
         {
             try
