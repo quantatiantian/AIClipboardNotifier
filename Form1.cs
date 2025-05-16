@@ -430,7 +430,7 @@ namespace AIClipboardNotifier
                     {
                         new ClipboardPopup(text, false).Show();
 
-                        var timeout = TimeSpan.FromSeconds(5);
+                        var timeout = TimeSpan.FromSeconds(30);
                         var processTask = ProcessRequestAsync(text);
                         var timeoutTask = Task.Delay(timeout);
 
@@ -624,7 +624,7 @@ namespace AIClipboardNotifier
                     {
                         model = modelOpenAI,
                         messages = new[] { new { role = "user", content = $"{prompt}：{text}" } },
-                        max_tokens = 200,
+                        max_tokens = 4096,
                         temperature = 0.7,
                         stream = true
                     };
