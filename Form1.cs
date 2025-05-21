@@ -14,6 +14,7 @@ using System.Runtime.InteropServices.ComTypes;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Net.Http.Headers;
+using System.Linq;
 
 namespace AIClipboardNotifier
 {
@@ -49,6 +50,7 @@ namespace AIClipboardNotifier
         private ToolStripMenuItem translateMenuItem;
         private ToolStripMenuItem formaterMenuItem;
         private ToolStripMenuItem aiAnythingMenuItem;
+        private ToolStripMenuItem promptListMenuItem;
         private const string AppName = "AIClipboardNotifier";
         private ToolStripMenuItem autoStartMenuItem;
 
@@ -61,10 +63,11 @@ namespace AIClipboardNotifier
         private string modelOpenWebui = "";
         private string modelOpenAI = "";
         private string transLang = "chinese";//translation
-        private string promptOllama = "";//any prompt for ollama
-        private string promptOpenWebui = "";//any prompt for open-webui
-        private string promptOpenAI = "";//any prompt for open-webui
         private string prompt = "";
+        private int promptIndex = 0;
+        private double timeout = 30;
+        private string[] promptList = { };
+        private string[] promptTitle = { };
 
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -76,9 +79,9 @@ namespace AIClipboardNotifier
 
         public MainForm()
         {
+            LoadConfig();
             InitializeTrayIcon();
             InitializeMainForm();
-            LoadConfig();
             AddClipboardFormatListener(this.Handle);
         }
 
@@ -134,16 +137,6 @@ namespace AIClipboardNotifier
                                         else
                                             useOllama = false;
                                     }
-                                    else if (key == "prompt")
-                                    {
-                                        promptOllama = value;
-                                    }
-                                    break;
-                                case "#translate":
-                                    if (key == "taget language")
-                                    {
-                                        transLang = value;
-                                    }
                                     break;
                                 case "#open-webui":
                                     if (key == "endpoint")
@@ -157,10 +150,6 @@ namespace AIClipboardNotifier
                                     else if (key == "model")
                                     {
                                         modelOpenWebui = value;
-                                    }
-                                    else if (key == "prompt")
-                                    {
-                                        promptOpenWebui = value;
                                     }
                                     else if (key == "enable")
                                     {
@@ -183,16 +172,29 @@ namespace AIClipboardNotifier
                                     {
                                         modelOpenAI = value;
                                     }
-                                    else if (key == "prompt")
-                                    {
-                                        promptOpenAI = value;
-                                    }
                                     else if (key == "enable")
                                     {
                                         if (value.Equals("true"))
                                             useOpenAI = true;
                                         else
                                             useOpenAI = false;
+                                    }
+                                    break;
+                                case "#prompt-list":
+                                    promptTitle = promptTitle.Append(key).ToArray();
+                                    promptList = promptList.Append(value).ToArray();
+                                    break;
+                                case "#params":
+                                    if (key == "timeout")
+                                    {
+                                        if (double.TryParse(value, out double parsedTimeout))
+                                        {
+                                            timeout = parsedTimeout;
+                                        }
+                                    }
+                                    else if (key == "taget language")
+                                    {
+                                        transLang = value;
                                     }
                                     break;
                             }
@@ -251,6 +253,17 @@ namespace AIClipboardNotifier
                 Checked = isAIAnythingEnabled
             };
 
+            // Prompt List
+            if (promptList.Length != 0)
+            {
+                promptListMenuItem = new ToolStripMenuItem("Prompt List");
+                UpdatePromptListMenuItems();
+            }
+            else
+            {
+                promptListMenuItem = new ToolStripMenuItem("Prompt List (Empty)");
+            }
+
             //Exit
             var exitMenuItem = new ToolStripMenuItem("Exit", null, OnExit);
 
@@ -259,6 +272,7 @@ namespace AIClipboardNotifier
             trayMenu.Items.Add(formaterMenuItem);
             trayMenu.Items.Add(translateMenuItem);
             trayMenu.Items.Add(aiAnythingMenuItem);
+            trayMenu.Items.Add(promptListMenuItem);
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add(exitMenuItem);
 
@@ -275,6 +289,38 @@ namespace AIClipboardNotifier
             trayMenu.Items.Add(autoStartMenuItem);
         }
 
+        private void UpdatePromptListMenuItems()
+        {
+            promptListMenuItem.DropDownItems.Clear();
+            for (int i = 0; i < promptTitle.Length; i++)
+            {
+                var item = new ToolStripMenuItem(promptTitle[i])
+                {
+                    CheckOnClick = false,
+                    Checked = (i == promptIndex)
+                };
+                int index = i;
+                item.Click += (s, e) =>
+                {
+                    if (item.Checked)
+                    {
+                        item.Checked = false;
+                        promptIndex = -1;
+                    }
+                    else
+                    {
+                        foreach (ToolStripMenuItem menuItem in promptListMenuItem.DropDownItems)
+                        {
+                            menuItem.Checked = false;
+                        }
+                        item.Checked = true;
+                        promptIndex = index;
+                    }
+                };
+                promptListMenuItem.DropDownItems.Add(item);
+            }
+        }
+
         // Formater
         private void ToggleFormater(object sender, EventArgs e)
         {
@@ -283,7 +329,7 @@ namespace AIClipboardNotifier
 
         private bool checkAIConfig() {
             if (useOllama) {
-                if (endpoint_ollama.Length !=0 && modelOllama.Length !=0 && promptOllama.Length != 0)
+                if (endpoint_ollama.Length !=0 && modelOllama.Length !=0)
                 {
                     return true;
                 }
@@ -291,7 +337,7 @@ namespace AIClipboardNotifier
 
             if (useOpenWebui)
             {
-                if (endpoint_openwebui.Length != 0 && modelOllama.Length != 0 && promptOllama.Length != 0)
+                if (endpoint_openwebui.Length != 0 && modelOllama.Length != 0)
                 {
                     return true;
                 }
@@ -299,7 +345,7 @@ namespace AIClipboardNotifier
 
             if (useOpenAI)
             {
-                if (endpoint_openai.Length != 0 && modelOpenAI.Length != 0 && promptOpenAI.Length != 0)
+                if (endpoint_openai.Length != 0 && modelOpenAI.Length != 0)
                 {
                     return true;
                 }
@@ -430,9 +476,9 @@ namespace AIClipboardNotifier
                     {
                         new ClipboardPopup(text, false).Show();
 
-                        var timeout = TimeSpan.FromSeconds(30);
+                        var timeoutDuration = TimeSpan.FromSeconds(timeout);
                         var processTask = ProcessRequestAsync(text);
-                        var timeoutTask = Task.Delay(timeout);
+                        var timeoutTask = Task.Delay(timeoutDuration);
 
                         var completedTask = await Task.WhenAny(processTask, timeoutTask);
                         string translatedText = string.Empty;
@@ -487,17 +533,9 @@ namespace AIClipboardNotifier
             }
 
             if (isAIAnythingEnabled) {
-                if (useOllama)
+                if (promptIndex != -1)
                 {
-                    prompt = promptOllama;
-                }
-                else if(useOpenWebui)
-                {
-                    prompt = promptOpenWebui;
-                }
-                else
-                {
-                    prompt = promptOpenAI;
+                    prompt = promptList[promptIndex];
                 }
             }
 
@@ -650,7 +688,7 @@ namespace AIClipboardNotifier
                                     dynamic obj = JsonConvert.DeserializeObject(json);
                                     var contentPiece = obj.choices[0].delta?.content;
                                     if (contentPiece != null)
-                                        sb.Append((string)contentPiece);
+                                        sb.Append(contentPiece);
                                 }
                                 catch { /* ignore */ }
                             }
@@ -1129,7 +1167,7 @@ namespace AIClipboardNotifier
             else
             {
                 _fadeOutTimer.Stop();
-                this.Close(); // 关闭窗口
+                this.Close();
             }
         }
 
