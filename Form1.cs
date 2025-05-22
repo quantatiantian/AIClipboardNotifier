@@ -51,6 +51,7 @@ namespace AIClipboardNotifier
         private ToolStripMenuItem formaterMenuItem;
         private ToolStripMenuItem aiAnythingMenuItem;
         private ToolStripMenuItem promptListMenuItem;
+        private ToolStripMenuItem modelListMenuItem;
         private const string AppName = "AIClipboardNotifier";
         private ToolStripMenuItem autoStartMenuItem;
 
@@ -59,15 +60,15 @@ namespace AIClipboardNotifier
         private string endpoint_openai = "http://localhost:3000/api/chat/completions";//openai
         private string apiKey_openwebui = "sk_";//open-webui
         private string apiKey_openai = "sk_";//openai-like
-        private string modelOllama = "";
-        private string modelOpenWebui = "";
-        private string modelOpenAI = "";
         private string transLang = "chinese";//translation
         private string prompt = "";
         private int promptIndex = 0;
         private double timeout = 30;
         private string[] promptList = { };
         private string[] promptTitle = { };
+        private string[] modelList = { };
+        private string[] modelTitle = { };
+        private int modelIndex = 0;
 
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -103,6 +104,12 @@ namespace AIClipboardNotifier
                 string[] lines = File.ReadAllLines(filePath);
                 string currentSection = "";
 
+                // 清空
+                promptTitle = new string[] { };
+                promptList = new string[] { };
+                modelTitle = new string[] { };
+                modelList = new string[] { };
+
                 foreach (string line in lines)
                 {
                     string trimmedLine = line.Trim();
@@ -126,10 +133,6 @@ namespace AIClipboardNotifier
                                     {
                                         endpoint_ollama = value;
                                     }
-                                    else if (key == "model")
-                                    {
-                                        modelOllama = value;
-                                    }
                                     else if (key == "enable")
                                     {
                                         if(value.Equals("true"))
@@ -146,10 +149,6 @@ namespace AIClipboardNotifier
                                     else if (key == "apikey")
                                     {
                                         apiKey_openwebui = value;
-                                    }
-                                    else if (key == "model")
-                                    {
-                                        modelOpenWebui = value;
                                     }
                                     else if (key == "enable")
                                     {
@@ -168,10 +167,6 @@ namespace AIClipboardNotifier
                                     {
                                         apiKey_openai = value;
                                     }
-                                    else if (key == "model")
-                                    {
-                                        modelOpenAI = value;
-                                    }
                                     else if (key == "enable")
                                     {
                                         if (value.Equals("true"))
@@ -183,6 +178,10 @@ namespace AIClipboardNotifier
                                 case "#prompt-list":
                                     promptTitle = promptTitle.Append(key).ToArray();
                                     promptList = promptList.Append(value).ToArray();
+                                    break;
+                                case "#model-list":
+                                    modelTitle = modelTitle.Append(key).ToArray();
+                                    modelList = modelList.Append(value).ToArray();
                                     break;
                                 case "#params":
                                     if (key == "timeout")
@@ -264,6 +263,16 @@ namespace AIClipboardNotifier
                 promptListMenuItem = new ToolStripMenuItem("Prompt List (Empty)");
             }
 
+            if (modelList.Length != 0)
+            {
+                modelListMenuItem = new ToolStripMenuItem("Model List");
+                UpdateModelListMenuItems();
+            }
+            else
+            {
+                modelListMenuItem = new ToolStripMenuItem("Model List (Empty)");
+            }
+
             //Exit
             var exitMenuItem = new ToolStripMenuItem("Exit", null, OnExit);
 
@@ -273,6 +282,7 @@ namespace AIClipboardNotifier
             trayMenu.Items.Add(translateMenuItem);
             trayMenu.Items.Add(aiAnythingMenuItem);
             trayMenu.Items.Add(promptListMenuItem);
+            trayMenu.Items.Add(modelListMenuItem);
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add(exitMenuItem);
 
@@ -321,34 +331,49 @@ namespace AIClipboardNotifier
             }
         }
 
+        private void UpdateModelListMenuItems()
+        {
+            modelListMenuItem.DropDownItems.Clear();
+            for (int i = 0; i < modelTitle.Length; i++)
+            {
+                var item = new ToolStripMenuItem(modelTitle[i])
+                {
+                    CheckOnClick = false,
+                    Checked = (i == modelIndex)
+                };
+                int index = i;
+                item.Click += (s, e) =>
+                {
+                    foreach (ToolStripMenuItem menuItem in modelListMenuItem.DropDownItems)
+                    {
+                        menuItem.Checked = false;
+                    }
+                    item.Checked = true;
+                    modelIndex = index;
+                };
+                modelListMenuItem.DropDownItems.Add(item);
+            }
+        }
+
         // Formater
         private void ToggleFormater(object sender, EventArgs e)
         {
             isFormaterEnabled = formaterMenuItem.Checked;
         }
 
-        private bool checkAIConfig() {
-            if (useOllama) {
-                if (endpoint_ollama.Length !=0 && modelOllama.Length !=0)
-                {
-                    return true;
-                }
+        private bool checkAIConfig()
+        {
+            if (modelIndex == -1)
+            {
+                MessageBox.Show("Please select a model from the Model List menu.");
+                return false;
             }
 
-            if (useOpenWebui)
+            if ((useOllama && !string.IsNullOrEmpty(endpoint_ollama)) ||
+                (useOpenWebui && !string.IsNullOrEmpty(endpoint_openwebui)) ||
+                (useOpenAI && !string.IsNullOrEmpty(endpoint_openai)))
             {
-                if (endpoint_openwebui.Length != 0 && modelOllama.Length != 0)
-                {
-                    return true;
-                }
-            }
-
-            if (useOpenAI)
-            {
-                if (endpoint_openai.Length != 0 && modelOpenAI.Length != 0)
-                {
-                    return true;
-                }
+                return true;
             }
 
             return false;
@@ -372,6 +397,13 @@ namespace AIClipboardNotifier
 
         private void ToggleAIAnything(object sender, EventArgs e)
         {
+            if (promptIndex == -1)
+            {
+                MessageBox.Show("Please select one prompt from the Prompt List first, then enable AI Anything.");
+                aiAnythingMenuItem.Checked = false;
+                return;
+            }
+
             if (!checkAIConfig())
             {
                 MessageBox.Show("AI is not configured. Please set ollama or open-webui enable field to true in config.txt");
@@ -424,6 +456,8 @@ namespace AIClipboardNotifier
                 statusMenuItem.Text = "Stop";
                 trayIcon.Icon = enableIcon;
                 LoadConfig();
+                UpdatePromptListMenuItems();
+                UpdateModelListMenuItems();
             }
             else
             {
@@ -563,7 +597,7 @@ namespace AIClipboardNotifier
                     var request = new
                     {
                         prompt = $"{prompt}：{text}",
-                        model = modelOllama
+                        model = modelList[modelIndex]
                     };
 
                     var response = await client.PostAsJsonAsync(endpoint_ollama, request);
@@ -605,9 +639,9 @@ namespace AIClipboardNotifier
                 {
                     var requestBody = new
                     {
-                        model = modelOpenWebui,
+                        model = modelList[modelIndex],
                         messages = new[] { new { role = "user", content = $"{prompt}：{text}" } },
-                        max_tokens = 60
+                        max_tokens = 4096
                     };
 
                     var content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
@@ -660,7 +694,7 @@ namespace AIClipboardNotifier
 
                     var requestBody = new
                     {
-                        model = modelOpenAI,
+                        model = modelList[modelIndex],
                         messages = new[] { new { role = "user", content = $"{prompt}：{text}" } },
                         max_tokens = 4096,
                         temperature = 0.7,
