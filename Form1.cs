@@ -62,13 +62,15 @@ namespace AIClipboardNotifier
         private string apiKey_openai = "sk_";//openai-like
         private string transLang = "chinese";//translation
         private string prompt = "";
-        private int promptIndex = 0;
+        private int promptIndex = -1;
         private double timeout = 30;
         private string[] promptList = { };
         private string[] promptTitle = { };
         private string[] modelList = { };
         private string[] modelTitle = { };
-        private int modelIndex = 0;
+        private int modelIndex = -1;
+        private string picPath = "";
+        private string imageBase64 = "";
 
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -104,7 +106,6 @@ namespace AIClipboardNotifier
                 string[] lines = File.ReadAllLines(filePath);
                 string currentSection = "";
 
-                // 清空
                 promptTitle = new string[] { };
                 promptList = new string[] { };
                 modelTitle = new string[] { };
@@ -194,6 +195,64 @@ namespace AIClipboardNotifier
                                     else if (key == "taget language")
                                     {
                                         transLang = value;
+                                    }
+                                    break;
+                                case "#default-settings":
+                                    if (key == "provider")
+                                    {
+                                        if(value.Equals("ollama", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            useOllama = true;
+                                            useOpenWebui = false;
+                                            useOpenAI = false;
+                                        }
+                                        else if (value.Equals("open-webui", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            useOllama = false;
+                                            useOpenWebui = true;
+                                            useOpenAI = false;
+                                        }
+                                        else if (value.Equals("openai-like", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            useOllama = false;
+                                            useOpenWebui = false;
+                                            useOpenAI = true;
+                                        }
+                                    }
+                                    else if (key == "model")
+                                    {
+                                        for (int i = 0; i < modelTitle.Length; i++)
+                                        {
+                                            if (modelTitle[i].Equals(value, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                modelIndex = i;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    else if (key == "prompt")
+                                    {
+                                        for (int i = 0; i < promptTitle.Length; i++)
+                                        {
+                                            if (promptTitle[i].Equals(value, StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                promptIndex = i;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    else if (key == "AI")
+                                    {
+                                        if (value.Equals("translate", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isTranslateEnabled = true;
+                                            isAIAnythingEnabled = false;
+                                        }
+                                        else if (value.Equals("anything", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            isTranslateEnabled = false;
+                                            isAIAnythingEnabled = true;
+                                        }
                                     }
                                     break;
                             }
@@ -316,6 +375,8 @@ namespace AIClipboardNotifier
                     {
                         item.Checked = false;
                         promptIndex = -1;
+                        aiAnythingMenuItem.Checked = false;
+                        isAIAnythingEnabled = false;
                     }
                     else
                     {
@@ -325,6 +386,13 @@ namespace AIClipboardNotifier
                         }
                         item.Checked = true;
                         promptIndex = index;
+                        aiAnythingMenuItem.Checked = true;
+                        isAIAnythingEnabled = true;
+                        if (isTranslateEnabled)
+                        {
+                            translateMenuItem.Checked = false;
+                            isTranslateEnabled = false;
+                        }
                     }
                 };
                 promptListMenuItem.DropDownItems.Add(item);
@@ -487,11 +555,44 @@ namespace AIClipboardNotifier
         {
             try
             {
-                if (Clipboard.ContainsText())
+                picPath = "";
+                if (Clipboard.ContainsImage())
+                {
+                    Image img = Clipboard.GetImage();
+                    string fileName = "clipboard_image.png";
+                    picPath = Path.Combine(Environment.CurrentDirectory, fileName);
+                    img.Save(picPath, System.Drawing.Imaging.ImageFormat.Png);
+                    imageBase64 = Convert.ToBase64String(File.ReadAllBytes(picPath));
+                }
+
+                if (Clipboard.ContainsFileDropList())
+                {
+                    var files = Clipboard.GetFileDropList();
+                    List<string> imagePaths = new List<string>();
+                    foreach (string file in files)
+                    {
+                        string ext = Path.GetExtension(file).ToLower();
+                        if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".gif")
+                        {
+                            imagePaths.Add(file);
+                        }
+                    }
+                    if (imagePaths.Count > 0)
+                    {
+                        picPath = imagePaths[0];
+                        imageBase64 = Convert.ToBase64String(File.ReadAllBytes(picPath));
+                    }
+                }
+
+                if (Clipboard.ContainsText() || picPath.Length != 0)
                 {
                     string text = Clipboard.GetText();
+                    if (picPath.Length != 0)
+                    {
+                        text = picPath;
+                    }
 
-                    if (isFormaterEnabled)
+                    if (isFormaterEnabled && picPath.Length ==0)
                     {
                         string formattedText = FormatText(text);
                         if (formattedText != text && formattedText != "null")
@@ -511,7 +612,7 @@ namespace AIClipboardNotifier
                         new ClipboardPopup(text, false).Show();
 
                         var timeoutDuration = TimeSpan.FromSeconds(timeout);
-                        var processTask = ProcessRequestAsync(text);
+                        var processTask = ProcessRequestAsync(text);//The main process of AI request
                         var timeoutTask = Task.Delay(timeoutDuration);
 
                         var completedTask = await Task.WhenAny(processTask, timeoutTask);
@@ -594,11 +695,19 @@ namespace AIClipboardNotifier
             {
                 using (var client = new HttpClient())
                 {
-                    var request = new
-                    {
-                        prompt = $"{prompt}：{text}",
-                        model = modelList[modelIndex]
-                    };
+                    var request = !string.IsNullOrEmpty(picPath)
+                        ? new
+                        {
+                            prompt = prompt,
+                            model = modelList[modelIndex],
+                            images = new string[] { imageBase64 }
+                        }
+                        : new
+                        {
+                            prompt = $"{prompt}：{text}",
+                            model = modelList[modelIndex],
+                            images = Array.Empty<string>()
+                        };
 
                     var response = await client.PostAsJsonAsync(endpoint_ollama, request);
                     response.EnsureSuccessStatusCode();
@@ -637,10 +746,11 @@ namespace AIClipboardNotifier
             {
                 using (var client = new HttpClient())
                 {
+                    var promptContent = !string.IsNullOrEmpty(picPath) ? $"{prompt}:{imageBase64}" : $"{prompt}：{text}";
                     var requestBody = new
                     {
                         model = modelList[modelIndex],
-                        messages = new[] { new { role = "user", content = $"{prompt}：{text}" } },
+                        messages = new[] { new { role = "user", content = promptContent } },
                         max_tokens = 4096
                     };
 
@@ -692,10 +802,11 @@ namespace AIClipboardNotifier
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey_openai);
                     }
 
+                    var promptContent = !string.IsNullOrEmpty(picPath) ? $"{prompt}:{imageBase64}" : $"{prompt}：{text}";
                     var requestBody = new
                     {
                         model = modelList[modelIndex],
-                        messages = new[] { new { role = "user", content = $"{prompt}：{text}" } },
+                        messages = new[] { new { role = "user", content = promptContent } },
                         max_tokens = 4096,
                         temperature = 0.7,
                         stream = true
