@@ -5,8 +5,8 @@ you need to configure ollama or open-webui or openai-like according to your AI e
 endpoint:http://localhost:11434/api/generate
 
 #open-webui
-endpoint:http://localhost:3000/ollama/api/chat
-apikey:sk1-92a4de2d1f254fa787c3a7da7fd02e3c
+endpoint:http://localhost:3000/ollama/api/generate
+apikey:sk-92a4de2d1f254fa787c3a7da7fd02e3c
 
 #openai-like
 endpoint:http://localhost:3000/api/chat/completions
@@ -38,7 +38,6 @@ ImageRecognition:What can you see in the picture?
 #default-settings
 provider:ollama
 model:vison
-prompt:OCR
+prompt:ImageRecognition
 AI:anything
-
-
+※translate or anything

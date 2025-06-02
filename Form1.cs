@@ -746,45 +746,51 @@ namespace AIClipboardNotifier
             {
                 using (var client = new HttpClient())
                 {
-                    var promptContent = !string.IsNullOrEmpty(picPath) ? $"{prompt}:{imageBase64}" : $"{prompt}：{text}";
-                    var requestBody = new
-                    {
-                        model = modelList[modelIndex],
-                        messages = new[] { new { role = "user", content = promptContent } },
-                        max_tokens = 4096
-                    };
-
+                    var requestBody = !string.IsNullOrEmpty(picPath)
+                        ? new
+                        {
+                            prompt = prompt,
+                            model = modelList[modelIndex],
+                            images = new string[] { imageBase64 }
+                        }
+                        : new
+                        {
+                            prompt = $"{prompt}：{text}",
+                            model = modelList[modelIndex],
+                            images = Array.Empty<string>()
+                        };
                     var content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
                     client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey_openwebui);
-                    var response = await client.PostAsync(endpoint_openwebui, content);
-                    var responseString = await response.Content.ReadAsStringAsync();
 
-                    var jsonObjects = responseString.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                    var fullResponse = new StringBuilder();
-                    foreach (var jsonObj in jsonObjects)
+                    var response = await client.PostAsync(endpoint_openwebui, content);//different with ollama(PostAsJsonAsync)
+                    response.EnsureSuccessStatusCode();
+
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var reader = new StreamReader(stream))
                     {
-                        try
+                        StringBuilder translatedText = new StringBuilder();
+
+                        while (!reader.EndOfStream)
                         {
-                            var parsed = JObject.Parse(jsonObj);
-                            if (parsed["message"]?["content"]?.ToString() is string messageContent)
+                            var line = await reader.ReadLineAsync();
+                            if (!string.IsNullOrEmpty(line))
                             {
-                                fullResponse.Append(messageContent);
+                                var jsonResponse = JsonConvert.DeserializeObject<OllamaResponse>(line);
+                                if (jsonResponse != null && !string.IsNullOrEmpty(jsonResponse.Response))
+                                {
+                                    translatedText.Append(jsonResponse.Response);
+                                }
                             }
                         }
-                        catch (JsonException)
-                        {
-                            return null;
-                        }
-                    }
 
-                    var finalResponse = fullResponse.ToString();
-                    return finalResponse;
+                        return translatedText.ToString();
+                    }
                 }
             }
             catch
             {
                 return null;
-            } 
+            }
         }
 
 
@@ -802,11 +808,26 @@ namespace AIClipboardNotifier
                         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey_openai);
                     }
 
-                    var promptContent = !string.IsNullOrEmpty(picPath) ? $"{prompt}:{imageBase64}" : $"{prompt}：{text}";
+                    var promptContent = new List<object>();
+                    if (!string.IsNullOrEmpty(picPath))
+                    {
+                        promptContent.Add(new { type = "input_text", text = prompt });
+                        promptContent.Add(new { type = "input_image", image_url = $"data:image/png;base64,{imageBase64}" });
+                    }
+                    else
+                    {
+                        promptContent.Add(new { type = "input_text", text = $"{prompt}：{text}" });
+                    }
+
                     var requestBody = new
                     {
                         model = modelList[modelIndex],
-                        messages = new[] { new { role = "user", content = promptContent } },
+                        messages = new[] {
+                            new {
+                                role = "user",
+                                content = promptContent
+                            }
+                        },
                         max_tokens = 4096,
                         temperature = 0.7,
                         stream = true
