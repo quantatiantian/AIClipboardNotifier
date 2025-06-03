@@ -11,18 +11,19 @@ apikey:sk-92a4de2d1f254fa787c3a7da7fd02e3c
 #openai-like
 endpoint:http://localhost:3000/api/chat/completions
 apikey:sk-92a4de2d1f254fa787c3a7da7fd02e3c
+※vison model not supported.
 
 #params
 timeout:60
 taget language:English
-※To use the AI translation feature, this field must be set.
-※The AI translate function does not need to set a prompt because the prompt is already built into the program.
-※It also does not need to set the input language because the AI can automatically determine it.
+※Timeout is used to specify the display time of the popup box.
+※Target language is used to specify the translation target language for AI translate.
 
 #model-list
 translate:qwen2.5:3b
 code:deepseek-coder-v2
 vison:minicpm-v
+※Model list is used for AI Anything feature(not for AI translate).
 
 #prompt-list
 Calculate:Calculate the equation below and reply with only the calculated result. Do not include the calculation process or any other context outside of the result
@@ -32,12 +33,13 @@ Code Review:As an advanced programmer, please review the following code and iden
 QA:Please answer the below question
 OCR:Please identify the text in the image,do not respond with any context beyond the text itself.
 ImageRecognition:What can you see in the picture?
-※Prompt list is used for AI Anything feature
-※You can set multiple commonly used prompts to switch between them at any time.
+※Prompt list is used for AI Anything feature(not for AI translate).
 
 #default-settings
 provider:ollama
-model:vison
-prompt:ImageRecognition
+model-translate:qwen2.5:3b
+model-anything:vison
+prompt:OCR
 AI:anything
-※translate or anything
+※Set AI to "translate" or "anything".
+※Set model-anything to the title of model in model-list.
