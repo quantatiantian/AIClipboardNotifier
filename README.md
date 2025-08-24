@@ -4,6 +4,10 @@
 
 A smart Windows clipboard utility that provides intelligent notifications and processing for copied text.
 
+## Vision model supported!
+![动画演示](ocr.gif)
+
+
 ## Features
 
 ### 📋 Clipboard Change Notification
