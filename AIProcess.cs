@@ -173,6 +173,7 @@ namespace AIClipboardNotifier
 
         public static async Task<string> RequestOpenAIAsync(string text, string model)
         {
+            string errorContent = "";
             try
             {
                 using (var client = new HttpClient())
@@ -199,13 +200,13 @@ namespace AIClipboardNotifier
                                     content = new object[]
                                     {
                                         new { type = "text", text = $"{ConfigLoader.prompt}" },
-                                        new { type = "image",  image =  $"{imageBase64}" }
+                                        new { type = "image_url",  image_url =  new {url = $"data:image/png;base64,{imageBase64}" } }
                                     }
                                 }
                             },
                             max_tokens = 40960,
                             temperature = 0.7,
-                            stream = false
+                            stream = true
                         };
                     }
                     else
@@ -215,6 +216,7 @@ namespace AIClipboardNotifier
                             model = model,
                             messages = new[] { new { role = "user", content = $"{ConfigLoader.prompt}：{text}" } },
                             max_tokens = 4096,
+                            extra_params = new { no_think = true },
                             temperature = 0.7,
                             stream = true
                         };
@@ -223,6 +225,7 @@ namespace AIClipboardNotifier
                     var jsonBody = JsonConvert.SerializeObject(requestBody);
                     var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                     var response = await client.PostAsync(ConfigLoader.endpoint_openai, content);
+                    errorContent = await response.Content.ReadAsStringAsync();
                     response.EnsureSuccessStatusCode();
 
                     var sb = new StringBuilder();
@@ -264,7 +267,7 @@ namespace AIClipboardNotifier
             }
             catch
             {
-                return null;
+                return errorContent;
             }
         }
     }

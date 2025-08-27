@@ -32,15 +32,6 @@ namespace AIClipboardNotifier
     public class MainForm : Form
     {
         private const int WM_CLIPBOARDUPDATE = 0x031D;
-        //private bool isMonitoring = true;
-
-        //private bool isTranslateEnabled = false;
-        //private bool isFormaterEnabled = true;
-        //private bool isAIAnythingEnabled = false;
-
-        //private bool useOllama = false;
-        //private bool useOpenWebui = false;
-        //private bool useOpenAI = false;
         
         private NotifyIcon trayIcon;
         private Icon enableIcon;
@@ -55,24 +46,6 @@ namespace AIClipboardNotifier
         private const string AppName = "AIClipboardNotifier";
         private ToolStripMenuItem autoStartMenuItem;
 
-        //private string endpoint_ollama = "http://localhost:11434/api/generate";//ollama
-        //private string endpoint_openwebui = "http://localhost:3000/ollama/api/chat";//openwebui
-        //private string endpoint_openai = "http://localhost:3000/api/chat/completions";//openai
-        //private string apiKey_openwebui = "sk_";//open-webui
-        //private string apiKey_openai = "sk_";//openai-like
-        //private string transLang = "chinese";//translation
-        //private string prompt = "";
-        //private int promptIndex = -1;
-        //private double timeout = 30;
-        //private string[] promptList = { };
-        //public string[] promptTitle = { };
-        //private string[] modelList = { };
-        //private string[] modelTitle = { };
-        //private string modelForTranslate = "";
-        //private int modelIndex = -1;
-        //private string picPath = "";
-        //private string imageBase64 = "";
-
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool AddClipboardFormatListener(IntPtr hwnd);
@@ -83,7 +56,7 @@ namespace AIClipboardNotifier
 
         public MainForm()
         {
-            ConfigLoader.LoadConfig(); // 将当前实例传递给 LoadConfig 方法
+            ConfigLoader.LoadConfig();
             InitializeTrayIcon();
             InitializeMainForm();
             AddClipboardFormatListener(this.Handle);
@@ -373,10 +346,17 @@ namespace AIClipboardNotifier
                 if (Clipboard.ContainsImage())
                 {
                     Image img = Clipboard.GetImage();
-                    string fileName = "clipboard_image.png";
-                    AIProcess.picPath = Path.Combine(Environment.CurrentDirectory, fileName);
-                    img.Save(AIProcess.picPath, System.Drawing.Imaging.ImageFormat.Png);
-                    AIProcess.imageBase64 = Convert.ToBase64String(File.ReadAllBytes(AIProcess.picPath));
+                    if (img != null)
+                    {
+                        string fileName = "clipboard_image.png";
+                        AIProcess.picPath = Path.Combine(Environment.CurrentDirectory, fileName);
+                        img.Save(AIProcess.picPath, System.Drawing.Imaging.ImageFormat.Png);
+                        AIProcess.imageBase64 = Convert.ToBase64String(File.ReadAllBytes(AIProcess.picPath));
+                    }
+                    else
+                    {
+                        return;//do nothing if image is null
+                    }
                 }
 
                 if (Clipboard.ContainsFileDropList())
